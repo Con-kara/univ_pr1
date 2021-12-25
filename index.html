@@ -1,50 +1,147 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Html5 Canvas Image</title>
-    <meta charset="utf-8">
-    <style type="text/css">
-    </style>
-    <script type="text/javascript">
-
-        var keys = []
-
-        function keyPressFunction(event){
-            keys[e.keyCode] = true;
-
-        }
-
-        document.addEventListener("keypress", keyPressFunction, false);
-        var position_x = 0;
-        var position_y = 0;
-
-        function startDraw(){
-          setTimeout("draw()",20);
-        }
-
-        function draw(){
-            //이미지 객체 생성
-            var imgClo = new Image();
-            //페이지 로드후 이미지가 로드 되었을 때 이미지 출력
-            imgClo.addEventListener('load', function(){
-                //로드된 이미지를 캔버스에 출력
-                var ctx = document.getElementById('myCanvas').getContext("2d");
-
-                //canvas.drawImage() 함수를 사용하여 이미지 출력
-                //drawImage ( image sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
-                ctx.drawImage( imgClo , position_x, position_y, 20, 20);
-
-            },false);
-
-            //이미지 경로 설정
-            imgClo.src="resource/tank.jpg";
-            startDraw();
-        }
-    </script>
-
+  <meta charset="utf-8">
+  <title>Socket.io Chat Example</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 </head>
-<body onload="startDraw();">
+<body>
 
-    <canvas id="myCanvas" height="500" width="500">
-    </canvas>
+  <canvas id="gameboard" width="750" height="750">
+  </canvas>
+
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+
+  window.addEventListener("load", framework, false);
+  var tank_image = new Image();
+  tank_image.src = 'resource/tank.jpg'
+  var bullet_image = new Image();
+  bullet_image.src = ' resource/bullet.jpg'
+
+  class user{
+    constructor(x_position, y_position, user_id) {
+      this.user_id = user_id;
+      this.x_position = x_position;
+      this.y_position = y_position;
+      this.rotate = 0;
+      this.bullet_count = 0;
+    }
+  }
+
+  class bullet{
+    constructor(x_position, y_postion, x_speed, y_speed){
+      this.x_position = x_position;
+      this.y_position = y_position;
+      this.x_speed = x_speed;
+      this.y_speed = y_speed;
+      this.remove_count = 0;
+    }
+  }
+
+
+  var userList = []
+  var bulletList = []
+  var user1 = new user(500,500)
+  var user2 = new user(600,600)
+  userList.push(user1)
+  userList.push(user2)
+
+  function draw(){
+        var canvas = document.getElementById('gameboard');
+        if (canvas.getContext){
+          var ctx = canvas.getContext('2d');
+          /*
+            화면을 지운다.
+            모든 유저를 먼저 그린다
+            총알을 그린다.
+          */
+          ctx.clearRect(0, 0, 750, 750);
+          for (var u of userList){
+            console.log(u)
+            ctx.save();
+          	ctx.translate(12 + u.x_position, 20 + u.y_position);
+          	ctx.rotate(RadToDag(u.rotate));
+          	ctx.translate(-6 - u.x_position, -10 - u.y_position);
+          	ctx.drawImage(tank_image, u.x_position, u.y_position);
+            u.rotate++;
+          	ctx.restore();
+          }
+        }
+  }
+
+  function framework(){
+     setInterval (draw, 1000/60);
+  }
+
+  function RadToDag(angle){
+     return angle * Math.PI/180;
+  }
+
+
+  var user_id = ""
+  $(function(){
+    // socket.io 서버에 접속한다
+    var socket = io();
+
+    user_id = Math.random().toString(36);
+    user_id = user_id.substring(2,12);
+
+    // 서버로 자신이 들어왔음을 알린다.
+    socket.emit("login", {
+      // name: "ungmo2",
+      user_id: user_id,
+    });
+
+    // move_action
+    socket.emit("move_action",{
+
+    });
+
+    // 총알 발사
+    socket.emit("fire",{
+
+    });
+
+    // 서버에서 접속을 허용하고 나면, 최초의 모든 유저와 탄알을 모두 배열에 넣는다.
+    socket.on("login", function(data) {
+
+    });
+
+    // 새로 들어온 유저가 있다면, 로그인 한 유저의 정보를 배열에 넣는다.
+    socket.on("another_user_login", function(data){
+
+    });
+
+    // 총알은 스피드가 있으니까 보정이 자주 안되도 되는데, 유저 위치는 자주 싱크해야한다.
+    socket.on("state_user_update", function(data){
+
+    });
+
+    // 총알이 발사 됨
+    socket.on("fire_bullet", function(data){
+
+    });
+
+    // 총알이 삭제 됨
+    socket.on("delete_bullet", function(data){
+
+    });
+
+    // 유저가 삭제 됨.
+    socket.on("destory_user", function(data){
+
+    });
+
+    // state sync, 한번 호출 될 때마다 모든 위치를 보정한다.
+    // 배열에 있는 모든것을 지우고 새로 다 집어 넣는다. 굉장히 큰 작업.
+    socket.on("state_all_update", function(data){
+
+    });
+
+  });
+  </script>
 </body>
+</html>

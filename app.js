@@ -10,34 +10,66 @@ app.get('/', function(req, res) {
 
 // connection event handler
 // connection이 수립되면 event handler function의 인자로 socket인 들어온다
+
+class user{
+  constructor(x_position, y_position, user_id) {
+    this.user_id = user_id;
+    this.x_position = x_position;
+    this.y_position = y_position;
+    this.rotate = 0;
+    this.bullet_count = 0;
+  }
+}
+
+class bullet{
+  constructor(x_position, y_postion, x_speed, y_speed){
+    this.x_position = x_position;
+    this.y_position = y_position;
+    this.x_speed = x_speed;
+    this.y_speed = y_speed;
+    this.remove_count = 0;
+  }
+}
+
+var userList = []
+var bulletList = []
+
+
+function intervalFunc(){
+  for(var u of userList){
+
+  }
+  for(var b of bulletList){
+
+  }
+}
+
+setInterval(intervalFunc, 16)
+
 io.on('connection', function(socket) {
 
   // 접속한 클라이언트의 정보가 수신되면
   socket.on('login', function(data) {
-    console.log('Client logged-in:\n name:' + data.name + '\n userid: ' + data.userid);
-
     // socket에 클라이언트 정보를 저장한다
-    socket.name = data.name;
-    socket.userid = data.userid;
+    // userList 에 해당 user의 정보를 기입한다.
+    // 메시지를 전송한 클라이언트를 제외한 모든 클라이언트에게는 해당 유저가 추가되었음을 알리고,
+    // 메시지를 전송한 클라이언트에게는 모든 맵의 정보를 다 같이 보낸다.
+    socket.user_id = data.user_id;
+    var x_position = Math.floor(Math.random() * 500) + 100;
+    var y_position = Math.floor(Math.random() * 500) + 100;
+    userList[user_id] = new user(x_position, y_position, 0)
 
-    // 접속된 모든 클라이언트에게 메시지를 전송한다
-    io.emit('login', data.name );
+    socket.emit('login', {userList : userList, bulletList : bulletList} );
+    io.broadcast.emit('another_user_login', {add_user: userList[user_id] } );
+
   });
 
   // 클라이언트로부터의 메시지가 수신되면
   socket.on('chat', function(data) {
-    console.log('Message from %s: %s', socket.name, data.msg);
 
-    var msg = {
-      from: {
-        name: socket.name,
-        userid: socket.userid
-      },
-      msg: data.msg
-    };
 
     // 메시지를 전송한 클라이언트를 제외한 모든 클라이언트에게 메시지를 전송한다
-    socket.broadcast.emit('chat', msg);
+    //socket.broadcast.emit('chat', msg);
 
     // 메시지를 전송한 클라이언트에게만 메시지를 전송한다
     // socket.emit('s2c chat', msg);
