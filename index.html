@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Html5 Canvas Image</title>
+    <meta charset="utf-8">
+    <style type="text/css">
+    </style>
+    <script type="text/javascript">
+
+        var keys = []
+
+        function keyPressFunction(event){
+            keys[e.keyCode] = true;
+
+        }
+
+        document.addEventListener("keypress", keyPressFunction, false);
+        var position_x = 0;
+        var position_y = 0;
+
+        function startDraw(){
+          setTimeout("draw()",20);
+        }
+
+        function draw(){
+            //이미지 객체 생성
+            var imgClo = new Image();
+            //페이지 로드후 이미지가 로드 되었을 때 이미지 출력
+            imgClo.addEventListener('load', function(){
+                //로드된 이미지를 캔버스에 출력
+                var ctx = document.getElementById('myCanvas').getContext("2d");
+
+                //canvas.drawImage() 함수를 사용하여 이미지 출력
+                //drawImage ( image sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+                ctx.drawImage( imgClo , position_x, position_y, 20, 20);
+
+            },false);
+
+            //이미지 경로 설정
+            imgClo.src="resource/tank.jpg";
+            startDraw();
+        }
+    </script>
+
+</head>
+<body onload="startDraw();">
+
+    <canvas id="myCanvas" height="500" width="500">
+    </canvas>
+</body>
