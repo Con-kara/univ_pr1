@@ -17,9 +17,9 @@
 
   window.addEventListener("load", framework, false);
   var tank_image = new Image();
-  tank_image.src = 'resource/tank.jpg'
-  var bullet_image = new Image();
-  bullet_image.src = ' resource/bullet.jpg'
+  tank_image.src = 'tank.jpg'
+  var tank2_image = new Image();
+  tank2_image.src = 'tank2.jpg';
 
   class user{
     constructor(x_position, y_position, user_id) {
@@ -27,12 +27,16 @@
       this.x_position = x_position;
       this.y_position = y_position;
       this.rotate = 0;
+
+      this.where_rotate = 0; // -1 is left, 1 is right, 0 is neutral
+      this.where_move = 0; // 1 is forward, -1 is backward, 0 is neutral
       this.bullet_count = 0;
     }
   }
 
   class bullet{
-    constructor(x_position, y_postion, x_speed, y_speed){
+    constructor(x_position, y_postion, x_speed, y_speed, bullet_id){
+      this.bullet_id = bullet_id;
       this.x_position = x_position;
       this.y_position = y_position;
       this.x_speed = x_speed;
@@ -42,12 +46,9 @@
   }
 
 
-  var userList = []
-  var bulletList = []
-  var user1 = new user(500,500)
-  var user2 = new user(600,600)
-  userList.push(user1)
-  userList.push(user2)
+  let userList = {}
+  let bulletList = {}
+
 
   function draw(){
         var canvas = document.getElementById('gameboard');
@@ -59,14 +60,31 @@
             총알을 그린다.
           */
           ctx.clearRect(0, 0, 750, 750);
-          for (var u of userList){
-            console.log(u)
+          ctx.fillStyle = "black"; // 색상명
+          ctx.fillRect(0, 0, 750, 750);
+          for (var u in userList){
             ctx.save();
-          	ctx.translate(12 + u.x_position, 20 + u.y_position);
-          	ctx.rotate(RadToDag(u.rotate));
-          	ctx.translate(-6 - u.x_position, -10 - u.y_position);
-          	ctx.drawImage(tank_image, u.x_position, u.y_position);
-            u.rotate++;
+            let tmp = userList[u];
+          	ctx.translate(6 + tmp.x_position, 10 + tmp.y_position);
+          	ctx.rotate(RadToDag(tmp.rotate));
+          	ctx.translate(-6 -tmp.x_position, -10 -tmp.y_position);
+            if(tmp.user_id == user_id){
+                ctx.drawImage(tank2_image, tmp.x_position, tmp.y_position);
+            }else{
+                ctx.drawImage(tank_image, tmp.x_position, tmp.y_position);
+            }
+          	ctx.restore();
+          }
+
+          for (var b in bulletList){
+            ctx.save();
+            let tmp = bulletList[b];
+            ctx.beginPath();
+            ctx.arc(tmp.x_position,tmp.y_position,2,0,Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = 'red';
+            ctx.fill();
+          	//ctx.drawImage(bullet_image, tmp.x_position, tmp.y_position);
           	ctx.restore();
           }
         }
@@ -85,19 +103,90 @@
   $(function(){
     // socket.io 서버에 접속한다
     var socket = io();
-
+    let where_rotate = -1; // -1 is left, 1 is right
+    let where_move = -1; // -1 is backward 1 is forward
     user_id = Math.random().toString(36);
     user_id = user_id.substring(2,12);
+
+    document.addEventListener("keydown", is_push , false);
+    document.addEventListener("keydown", is_fire_push , false);
+    document.addEventListener("keyup", is_push_stop, false);
+
+    function is_push(event){
+
+      if([32, 37, 38, 39, 40].indexOf(event.keyCode) > -1) {
+        event.preventDefault();
+      }
+
+      switch(event.keyCode){
+        case 37:
+          // left key
+          where_rotate = -1;
+          socket.emit('move_rotate',{rotate: where_rotate});
+          break;
+        case 39:
+          // right key
+          where_rotate = 1;
+          socket.emit('move_rotate',{rotate: where_rotate});
+          break;
+      }
+      switch(event.keyCode){
+        case 38:
+          // up key
+          where_move = 1;
+          socket.emit('move_forward',{move: where_move});
+          break;
+        case 40:
+          // down key
+          where_move = -1;
+          socket.emit('move_forward',{move: where_move});
+          break;
+      }
+    };
+
+    function is_fire_push(event){
+      switch(event.keyCode){
+        case 32:
+          //space bar
+          // 총알이 발사 됨
+          bullet_id = Math.random().toString(36);
+          bullet_id = bullet_id.substring(2,12);
+          socket.emit("fire_bullet",{bullet_id: bullet_id});
+          break;
+      }
+    };
+
+    function is_push_stop(event){
+      switch(event.keyCode){
+        case 37:
+          // left key
+          where_rotate = 0;
+          socket.emit('stop_rotate',{rotate: where_rotate});
+          break;
+        case 39:
+          // right key
+          where_rotate = 0;
+          socket.emit('stop_rotate',{rotate: where_rotate});
+          break;
+      }
+      switch(event.keyCode){
+        case 38:
+          // up key
+          where_move = 0;
+          socket.emit('stop_forward',{move: where_move});
+          break;
+        case 40:
+          // down key
+          where_move = 0;
+          socket.emit('stop_forward',{move: where_move});
+          break;
+      }
+    };
 
     // 서버로 자신이 들어왔음을 알린다.
     socket.emit("login", {
       // name: "ungmo2",
       user_id: user_id,
-    });
-
-    // move_action
-    socket.emit("move_action",{
-
     });
 
     // 총알 발사
@@ -107,32 +196,53 @@
 
     // 서버에서 접속을 허용하고 나면, 최초의 모든 유저와 탄알을 모두 배열에 넣는다.
     socket.on("login", function(data) {
-
+        for(d in data.userList){
+            userList[d] = data.userList[d];
+        }
+        for(b in data.bulletList){
+            bulletList[b] = data.bulletList[b];
+        }
     });
 
     // 새로 들어온 유저가 있다면, 로그인 한 유저의 정보를 배열에 넣는다.
     socket.on("another_user_login", function(data){
-
+        userList[data.add_user.user_id] = data.add_user;
     });
 
     // 총알은 스피드가 있으니까 보정이 자주 안되도 되는데, 유저 위치는 자주 싱크해야한다.
     socket.on("state_user_update", function(data){
-
+        for(d in data.userList){
+          userList[d] = data.userList[d];
+        }
     });
 
-    // 총알이 발사 됨
-    socket.on("fire_bullet", function(data){
-
+    socket.on("state_bullet_update", function(data){
+        for(b in data.bulletList){
+          bulletList[b] = data.bulletList[b];
+        }
     });
 
     // 총알이 삭제 됨
     socket.on("delete_bullet", function(data){
+      for(b of data.bulletList){
+        delete bulletList[b];
+      }
+    });
 
+    socket.on("defeat_user", function(data){
+      for(u of data.userList){
+        console.log(u);
+        if(u == user_id){
+          window.close();
+        }
+        delete userList[u];
+      }
     });
 
     // 유저가 삭제 됨.
     socket.on("destory_user", function(data){
-
+        let id = data.user_id;
+        delete userList[id];
     });
 
     // state sync, 한번 호출 될 때마다 모든 위치를 보정한다.
